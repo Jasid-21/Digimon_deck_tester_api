@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { RawCard } from 'src/helpers/interfaces/raw-card.interface';
 import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class CardsStoreService {
@@ -32,10 +33,14 @@ export class CardsStoreService {
   */
 
   setCards() {
-    const file = fs.readFileSync(
-      'src/helpers/resources/database.json',
-      'utf-8',
+    const route = path.join(
+      process.cwd(),
+      'src',
+      'helpers',
+      'resources',
+      'database.json',
     );
+    const file = fs.readFileSync(route, 'utf-8');
     this.cardSStore = JSON.parse(file);
   }
 
