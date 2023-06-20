@@ -49,11 +49,30 @@ export class WebsocketGateway implements OnGatewayDisconnect {
     return true;
   }
 
-  @SubscribeMessage('request_join')
-  requestJoin(client: Socket, data: string) {
-    const json = JSON.parse(data); // Username, room_id.
-    const request = this.websocketService.requestJoin(json.room_id);
-
+  @SubscribeMessage('request_duel')
+  async requestJoin(client: Socket, data: any) {
+    console.log(data);
+    const request = this.websocketService.getRoomOwner(data.room_id);
     if (!request) return request;
+
+    const sockets = await this.server.fetchSockets();
+    const socket = sockets.find((s) => s.id == request);
+    if (!socket) return false;
+
+    socket.emit('request_duel', {
+      username: data.username,
+      user_id: client.id,
+    });
+    return true;
+  }
+
+  @SubscribeMessage('cancel_request')
+  async cancelRequest(client: Socket, data: string) {
+    const owner_id = this.websocketService.getRoomOwner(data);
+    if (!owner_id) return;
+
+    const sockets = await this.server.fetchSockets();
+    const socket = sockets.find((s) => s.id == owner_id);
+    socket.emit('cancel_request', client.id);
   }
 }

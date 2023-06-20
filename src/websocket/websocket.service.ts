@@ -28,7 +28,7 @@ export class WebsocketService {
     }));
   }
 
-  requestJoin(room_id: string): boolean | string {
+  getRoomOwner(room_id: string): boolean | string {
     const room = this.rooms.find((r) => r.id == room_id);
 
     if (!room) return false;
