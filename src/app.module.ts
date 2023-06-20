@@ -7,6 +7,7 @@ import { DeckBuilderModule } from './deck-builder/deck-builder.module';
 import { CardsStoreModule } from './cards-store/cards-store.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { WebsocketModule } from './websocket/websocket.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { join } from 'path';
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'app'),
     }),
+    WebsocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],
