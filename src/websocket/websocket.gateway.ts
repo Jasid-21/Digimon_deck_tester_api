@@ -1,78 +1,80 @@
 import {
-  OnGatewayConnection,
   OnGatewayDisconnect,
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
+  OnGatewayInit,
 } from '@nestjs/websockets';
 import { WebsocketService } from './websocket.service';
 import { Server, Socket } from 'socket.io';
-import { Player } from 'src/helpers/classes/player.class';
-import { random_code } from 'src/helpers/functions/randomCode.function';
 import { CardsStoreService } from 'src/cards-store/cards-store.service';
+import { WsResponse } from 'src/helpers/interfaces/response.interface';
+import {
+  cancelRequest,
+  fakeDuel,
+  handleHosting,
+  requestJoin,
+  setRoomsServices,
+  startDuel,
+  stopHosting,
+} from './rooms.gateway';
+
+import { drawCard, hatchDigimon, setDuelServices } from './duel.gateway';
 
 @WebSocketGateway(3001, {
   cors: { origin: '*' },
 })
-export class WebsocketGateway implements OnGatewayDisconnect {
+export class WebsocketGateway implements OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer() server: Server;
   constructor(
-    private readonly websocketService: WebsocketService,
+    private readonly socketServ: WebsocketService,
     private readonly cardsServ: CardsStoreService,
   ) {}
+  afterInit() {
+    setRoomsServices(this.socketServ, this.cardsServ, this.server);
+    setDuelServices(this.socketServ, this.cardsServ, this.server);
+  }
 
   handleDisconnect(client: Socket) {
     console.log(`Client ${client.id} disconnected`);
-    this.websocketService.removeRoomByClientId(client.id);
+    this.socketServ.removeRoomByClientId(client.id);
   }
 
   @SubscribeMessage('refresh_rooms')
   refreshRooms() {
-    return this.websocketService.getRooms();
+    return this.socketServ.getRooms();
   }
-
   @SubscribeMessage('host_room')
   handleHosting(client: Socket, data: any) {
-    const deck = this.cardsServ.getDeckFromCodes(data.code_deck.code_deck);
-    const player = new Player(client.id, data.username, deck);
-    const room_id = random_code();
-
-    this.websocketService.addRoom(room_id, player);
-    console.log(this.websocketService.getRooms());
-
-    return { id: room_id, player: player.name };
+    return handleHosting(client, data);
   }
-
   @SubscribeMessage('stop_hosting')
-  stopHosting(client: Socket) {
-    this.websocketService.removeRoomByClientId(client.id);
-    return true;
+  async stopHosting(client: Socket, requests: string[]) {
+    return stopHosting(client, requests);
   }
-
   @SubscribeMessage('request_duel')
   async requestJoin(client: Socket, data: any) {
-    console.log(data);
-    const request = this.websocketService.getRoomOwner(data.room_id);
-    if (!request) return request;
-
-    const sockets = await this.server.fetchSockets();
-    const socket = sockets.find((s) => s.id == request);
-    if (!socket) return false;
-
-    socket.emit('request_duel', {
-      username: data.username,
-      user_id: client.id,
-    });
-    return true;
+    return requestJoin(client, data);
   }
-
   @SubscribeMessage('cancel_request')
   async cancelRequest(client: Socket, data: string) {
-    const owner_id = this.websocketService.getRoomOwner(data);
-    if (!owner_id) return;
+    return cancelRequest(client, data);
+  }
+  @SubscribeMessage('start_duel')
+  async startDuel(client: Socket, data: any) {
+    return startDuel(client, data);
+  }
+  @SubscribeMessage('fake_duel')
+  fakeDuel(socket: Socket, data: any): WsResponse<boolean> {
+    return fakeDuel(socket, data);
+  }
 
-    const sockets = await this.server.fetchSockets();
-    const socket = sockets.find((s) => s.id == owner_id);
-    socket.emit('cancel_request', client.id);
+  @SubscribeMessage('draw-card')
+  async drawCard(client: Socket, data: { room_id: string }) {
+    return drawCard(client, data);
+  }
+  @SubscribeMessage('hatch')
+  hatchDigimon(client: Socket, data: { room_id: string }) {
+    return hatchDigimon(client, data);
   }
 }

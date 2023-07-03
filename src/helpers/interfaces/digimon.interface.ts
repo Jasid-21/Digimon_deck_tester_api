@@ -1,6 +1,8 @@
-import { RawCard } from './raw-card.interface';
+import { Card } from '../classes/card.class';
 
 export interface Digimon {
   id: string;
-  stages: RawCard[];
+  stages: Card[];
 }
+
+export const fog = 0;
