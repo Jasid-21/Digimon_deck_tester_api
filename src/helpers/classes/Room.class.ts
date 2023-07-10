@@ -22,10 +22,4 @@ export class Room {
   getPlayerById(player_id: string): Player | undefined {
     return this.players.find((p) => p.id == player_id);
   }
-
-  drawCard(player_id: string) {
-    const player = this.players.find((p) => p.id == player_id);
-    if (!player) throw Error('Player not found');
-    const { hand, deck } = player.drawCard();
-  }
 }

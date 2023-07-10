@@ -1,7 +1,8 @@
 import { Server, Socket } from 'socket.io';
-import { WebsocketService } from './websocket.service';
+import { DuelResponse, WebsocketService } from './websocket.service';
 import { CardsStoreService } from 'src/cards-store/cards-store.service';
 import { ErrMsg } from 'src/helpers/classes/errMsg.class';
+import { PlacesType } from 'src/helpers/interfaces/types';
 
 let socketServ: WebsocketService;
 let cardsServ: CardsStoreService;
@@ -34,6 +35,15 @@ export function hatchDigimon(client: Socket, data: any) {
   );
 }
 
+export function moveCard(client: Socket, data: any) {
+  handleDuelChange(
+    client,
+    data,
+    socketServ.moveCard.bind(socketServ),
+    'move-card',
+  );
+}
+
 async function handleDuelChange(
   client: Socket,
   data: { room_id: string },
@@ -43,8 +53,8 @@ async function handleDuelChange(
 ) {
   const room_id = data.room_id;
   console.log(room_id);
-  const resp = serviceAction(room_id, client.id);
-  if (resp instanceof ErrMsg) return resp;
+  const resp: DuelResponse = serviceAction(room_id, client.id);
+  if (resp.errMsg) return resp;
 
   const sockets = await server.fetchSockets();
   const ps = resp.players.map((p) => {

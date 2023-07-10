@@ -40,6 +40,7 @@ export class WebsocketGateway implements OnGatewayDisconnect, OnGatewayInit {
     this.socketServ.removeRoomByClientId(client.id);
   }
 
+  // * Rooms listeners.
   @SubscribeMessage('refresh_rooms')
   refreshRooms() {
     return this.socketServ.getRooms();
@@ -69,6 +70,7 @@ export class WebsocketGateway implements OnGatewayDisconnect, OnGatewayInit {
     return fakeDuel(socket, data);
   }
 
+  // *Duel state listeners.
   @SubscribeMessage('draw-card')
   async drawCard(client: Socket, data: { room_id: string }) {
     return drawCard(client, data);

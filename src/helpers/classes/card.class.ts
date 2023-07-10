@@ -19,7 +19,8 @@ export class Card implements CardInterface {
   rested: boolean;
   faceDown: boolean;
 
-  place: PlacesType;
+  place: PlacesType | 'digimon';
+  digimon_id?: string;
   player: string;
 
   constructor(card: CardInterface) {

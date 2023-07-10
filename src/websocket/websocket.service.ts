@@ -1,11 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { Room } from 'src/helpers/classes/Room.class';
+import { Card } from 'src/helpers/classes/card.class';
 import { ErrMsg } from 'src/helpers/classes/errMsg.class';
 import { Player } from 'src/helpers/classes/player.class';
 import { printError } from 'src/helpers/functions/printError.function';
 import { random_code } from 'src/helpers/functions/randomCode.function';
 import { shuffleArray } from 'src/helpers/functions/shuffleArray';
 import { toPlayableCards } from 'src/helpers/functions/toPlayableCards.function';
+import { BoardState } from 'src/helpers/interfaces/board_state.interface';
+import { WsResponse } from 'src/helpers/interfaces/response.interface';
+import { PlacesType } from 'src/helpers/interfaces/types';
+
+export interface DuelResponse {
+  state: BoardState | null;
+  players: string[] | null;
+  errMsg?: ErrMsg;
+}
 
 @Injectable()
 export class WebsocketService {
@@ -28,20 +38,29 @@ export class WebsocketService {
 
     room.players.forEach((p) => {
       const deck = toPlayableCards(p.raw_deck, p.id);
-      const main = deck.filter((c) => c.type != 'Digi-Egg');
-      const digiEggs = deck.filter((c) => c.type == 'Digi-Egg');
+      const base_main = deck.filter((c) => c.type != 'Digi-Egg');
+      const base_digiEggs = deck.filter((c) => c.type == 'Digi-Egg');
 
-      p.deck = shuffleArray(main);
-      p.hatch_down = shuffleArray(digiEggs);
+      const main: Card[] = shuffleArray(base_main);
+      const digiEggs: Card[] = shuffleArray(base_digiEggs);
+
+      main.forEach((c) => (c.place = 'deck'));
+      digiEggs.forEach((c) => (c.place = 'hatch_down'));
+      const security = main.splice(0, 5);
+      security.forEach((c) => (c.place = 'security'));
+
+      p.cards.push(...main);
+      p.cards.push(...digiEggs);
+      p.cards.push(...security);
     });
-
     room.active = true;
 
     const players = room.players.map((p) => {
       return {
         player_id: p.id,
-        deck: p.deck,
-        hatch_down: p.hatch_down,
+        deck: p.cards.filter((c) => c.place == 'deck'),
+        hatch_down: p.cards.filter((c) => c.place == 'hatch_down'),
+        security: p.cards.filter((c) => c.place == 'security'),
       };
     });
 
@@ -72,37 +91,65 @@ export class WebsocketService {
     return room.players[0].id;
   }
 
-  drawCard(room_id: string, player_id: string) {
-    const room = this.rooms.find((r) => r.id == room_id);
-    if (!room) return new ErrMsg('Room not found');
-
-    const player = room.players.find((p) => p.id == player_id);
-    if (!player) return new ErrMsg('Player not found');
-
-    const card = player.deck.pop();
-    if (!card) return new ErrMsg('Deck is empty');
-    player.hand.push(card);
-
-    return {
-      state: { deck: player.deck, hand: player.hand },
-      players: room.players.map((p) => p.id),
-    };
+  drawCard(room_id: string, player_id: string): DuelResponse {
+    const resp = this.handleDuelAction(room_id, player_id, 'drawCard');
+    return resp;
   }
 
-  hatchDigimon(room_id: string, player_id: string) {
+  hatchDigimon(room_id: string, player_id: string): DuelResponse {
+    const resp = this.handleDuelAction(room_id, player_id, 'hatchDigimon');
+    return resp;
+  }
+
+  moveCard(
+    room_id: string,
+    player_id: string,
+    card_id: string,
+    placeF: PlacesType,
+    digimon_id?: string,
+  ): DuelResponse {
+    const resp = this.handleDuelAction(room_id, player_id, 'moveCard', [
+      card_id,
+      placeF,
+      digimon_id,
+    ]);
+
+    console.log(resp);
+    return resp;
+  }
+
+  handleDuelAction(
+    room_id: string,
+    player_id: string,
+    action: keyof Player,
+    params?: any[],
+  ): DuelResponse {
     const room = this.rooms.find((r) => r.id == room_id);
-    if (!room) return new ErrMsg('Room not found');
+    if (!room)
+      return {
+        state: null,
+        players: null,
+        errMsg: new ErrMsg('Room not found'),
+      };
 
     const player = room.players.find((p) => p.id == player_id);
-    if (!player) return new ErrMsg('Player not found');
+    if (!player)
+      return {
+        state: null,
+        players: null,
+        errMsg: new ErrMsg('Player not found'),
+      };
 
-    const card = player.hatch_down.pop();
-    if (!card) return new ErrMsg('Empty hatch deck');
+    const method = player[action] as (...args: any[]) => WsResponse<BoardState>;
+    const boundMethod = method.bind(player);
+    const state = params ? boundMethod(...params) : boundMethod();
+    if (state.errMsg) {
+      return { state: null, players: null, errMsg: state.errMsg };
+    }
 
-    player.hatch_up = { id: random_code(5), stages: [card] };
     return {
+      state: state.resp,
       players: room.players.map((p) => p.id),
-      state: { hatch_down: player.hatch_down, hatch_up: player.hatch_up },
     };
   }
 }

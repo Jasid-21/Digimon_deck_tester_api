@@ -1,8 +1,6 @@
 import { Card } from '../classes/card.class';
 
-export interface Digimon {
+export interface DigimonInterface {
   id: string;
-  stages: Card[];
+  stages: string[];
 }
-
-export const fog = 0;
