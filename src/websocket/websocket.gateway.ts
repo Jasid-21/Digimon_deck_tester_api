@@ -19,7 +19,13 @@ import {
   stopHosting,
 } from './rooms.gateway';
 
-import { drawCard, hatchDigimon, setDuelServices } from './duel.gateway';
+import {
+  drawCard,
+  hatchDigimon,
+  moveCard,
+  playDigimon,
+  setDuelServices,
+} from './duel.gateway';
 
 @WebSocketGateway(3001, {
   cors: { origin: '*' },
@@ -78,5 +84,15 @@ export class WebsocketGateway implements OnGatewayDisconnect, OnGatewayInit {
   @SubscribeMessage('hatch')
   hatchDigimon(client: Socket, data: { room_id: string }) {
     return hatchDigimon(client, data);
+  }
+
+  @SubscribeMessage('play-digimon')
+  playDigimon(client: Socket, data: { room_id: string; card_id: string }) {
+    return playDigimon(client, data);
+  }
+
+  @SubscribeMessage('move-card')
+  moveCard(client: Socket, data: any) {
+    return moveCard(client, data);
   }
 }

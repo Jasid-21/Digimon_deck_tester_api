@@ -4,15 +4,10 @@ import { Card } from 'src/helpers/classes/card.class';
 import { ErrMsg } from 'src/helpers/classes/errMsg.class';
 import { Player } from 'src/helpers/classes/player.class';
 import { printError } from 'src/helpers/functions/printError.function';
-import { random_code } from 'src/helpers/functions/randomCode.function';
 import { shuffleArray } from 'src/helpers/functions/shuffleArray';
 import { toPlayableCards } from 'src/helpers/functions/toPlayableCards.function';
-import { BoardState } from 'src/helpers/interfaces/board_state.interface';
-import { WsResponse } from 'src/helpers/interfaces/response.interface';
-import { PlacesType } from 'src/helpers/interfaces/types';
 
 export interface DuelResponse {
-  state: BoardState | null;
   players: string[] | null;
   errMsg?: ErrMsg;
 }
@@ -91,65 +86,10 @@ export class WebsocketService {
     return room.players[0].id;
   }
 
-  drawCard(room_id: string, player_id: string): DuelResponse {
-    const resp = this.handleDuelAction(room_id, player_id, 'drawCard');
-    return resp;
-  }
-
-  hatchDigimon(room_id: string, player_id: string): DuelResponse {
-    const resp = this.handleDuelAction(room_id, player_id, 'hatchDigimon');
-    return resp;
-  }
-
-  moveCard(
-    room_id: string,
-    player_id: string,
-    card_id: string,
-    placeF: PlacesType,
-    digimon_id?: string,
-  ): DuelResponse {
-    const resp = this.handleDuelAction(room_id, player_id, 'moveCard', [
-      card_id,
-      placeF,
-      digimon_id,
-    ]);
-
-    console.log(resp);
-    return resp;
-  }
-
-  handleDuelAction(
-    room_id: string,
-    player_id: string,
-    action: keyof Player,
-    params?: any[],
-  ): DuelResponse {
+  getPlayers(room_id: string): string[] | undefined {
     const room = this.rooms.find((r) => r.id == room_id);
-    if (!room)
-      return {
-        state: null,
-        players: null,
-        errMsg: new ErrMsg('Room not found'),
-      };
+    if (!room) return;
 
-    const player = room.players.find((p) => p.id == player_id);
-    if (!player)
-      return {
-        state: null,
-        players: null,
-        errMsg: new ErrMsg('Player not found'),
-      };
-
-    const method = player[action] as (...args: any[]) => WsResponse<BoardState>;
-    const boundMethod = method.bind(player);
-    const state = params ? boundMethod(...params) : boundMethod();
-    if (state.errMsg) {
-      return { state: null, players: null, errMsg: state.errMsg };
-    }
-
-    return {
-      state: state.resp,
-      players: room.players.map((p) => p.id),
-    };
+    return room.players.map((p) => p.id);
   }
 }
