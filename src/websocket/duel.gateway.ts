@@ -29,6 +29,10 @@ export function moveCard(client: Socket, data: any) {
   handleDuelChange(client, data, 'move-card');
 }
 
+export function revealTopDeck(client: Socket, data: any) {
+  handleDuelChange(client, data, 'reveal-top-deck');
+}
+
 async function handleDuelChange(
   client: Socket,
   data: { room_id: string; [key: string]: any },

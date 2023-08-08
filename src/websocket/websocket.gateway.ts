@@ -24,6 +24,7 @@ import {
   hatchDigimon,
   moveCard,
   playDigimon,
+  revealTopDeck,
   setDuelServices,
 } from './duel.gateway';
 
@@ -89,6 +90,11 @@ export class WebsocketGateway implements OnGatewayDisconnect, OnGatewayInit {
   @SubscribeMessage('play-digimon')
   playDigimon(client: Socket, data: { room_id: string; card_id: string }) {
     return playDigimon(client, data);
+  }
+
+  @SubscribeMessage('reveal-top-deck')
+  revealTopDeck(client: Socket, data: { room_id: string }) {
+    return revealTopDeck(client, data);
   }
 
   @SubscribeMessage('move-card')
