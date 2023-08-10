@@ -3,5 +3,7 @@
     "activityBar.background": "#204a4a",
     "titleBar.activeBackground": "#2c5f68",
     "titleBar.activeForeground": "#f8fcfc"
-  }
+  },
+  "appService.defaultWebAppToDeploy": "undefined/subscriptions/b8cff2f6-dfcd-4d8d-8145-a48f27a86862/resourceGroups/portfolio/providers/Microsoft.Web/sites/portfolio-digimon",
+  "appService.deploySubpath": "."
 }
